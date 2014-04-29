@@ -1,0 +1,393 @@
+**************************************************************
+
+Program: Smart Vending Machine (SVM) System
+Version: 2.1
+Author(s):
+	Michael Surdouski
+	Raphael Kahler
+	Samuel Babalola
+	Zach Calfin
+	Ernesto Soltero
+
+**************************************************************
+
+BETA RELEASE FILES
+
+- SVM.jar: The executable for the SVM sytem.
+- SVM_Requirements Document_Team B_v2.0.docx: The requirements
+	document for the SVM system.
+- SVM_CrossTeamTestPlan_Team B_v1.0.xlsx: The test plan that
+	the beta user may fill out, with also adding additional
+	tests, and when finished send it back to the developer.
+	
+**************************************************************
+
+WHAT IS THIS PROGRAM ABOUT?
+
+The Smart Vending Machine system encompasses the model, views,
+and actions which need to be performed for a database of
+vending machines. SVM enables the interfaces of the
+marketing, customer, and restocker's perspectives in order to
+complete transactions, restock the machine, allow for
+management of the machine's stock, and create documented 
+statistics for the lifetime of each machine in a user friendly
+format.
+
+**************************************************************
+
+HOW TO RUN THE PROGRAM
+
+To run the program, simply locate SVM.jar file on your
+computer and double click it. A window will open, presenting
+you with the startup interface of the Smart Vending Machine
+system.
+
+**************************************************************
+
+STARTUP INTERFACE
+
+The startup interface will allow you to either use an existing
+database of vending machines or to create a new database.
+On creating a new database, the program will prompt you for the
+number of vending machines greater than 0 you would like to
+create on the SVM server, as well as for the dimension of the
+vending machines. Dimensions include the number of rows and
+columns in the machines as well as the depth of each slot. Depending
+on memory limitations and allocation on your personal computer,
+you may be limited for the amount of vending machines and
+their dimensions that you wish to create. Please also pay
+attention to the fact that creating a new database will
+erase any existing database in the process.
+
+**************************************************************
+
+MAIN INTERFACE
+
+The main interface, which is displayed after the startup 
+interface, contains options for which GUI perspective you
+would like to remotely access any vending machine.
+Your options are as follows:
+
+---------------
+CustomerUI
+RestockerUI
+MarketingUI
+---------------
+
+Note that the main interface will be your home base when using
+the SVM system. Any perspective you connect to will open in a 
+new window that you can close when you are done. The main 
+interface will stay open during the use of this program and 
+will allow you to access several perspectives at the same time. 
+When you want to close the program you can close the main 
+interface, which will then shut down any open perspective you 
+may still have open.
+
+**************************************************************
+
+OPENING INTERFACES
+
+The transition to interfaces occur when you select either
+the customer, restocker, or marketing button from the main
+interface screen. Opening interfaces is an important step
+to accessing a vending machine from the perspective of your
+choosing. Upon entering the restocker or customer interface,
+you will be prompted with the following message:
+
+---------------
+Enter the ID of the vending machine
+---------------
+
+The ID is the numbering system for vending machines in the
+database. IDs go from 1 to the number of vending machines
+in the database.
+This prompt is essentially asking you which machine you wish
+to attach your perspective to. You can always exit a interface
+at any point in time.
+
+**************************************************************
+
+CUSTOMER GUI
+
+The customer GUI perspective is used to make purchases of items
+on the vending machine it is currently "attached" to. Upon
+entering the customer interface, you will see a lock screen.
+Clicking on the screen will unlock the vending machine for
+your use. If there is a different perspective already attached
+to the vending machine you will be unable to unlock it and
+will have to wait until the other perspectives disengage their
+lock.
+
+Upon unlocking you will enter the main customer GUI screen
+that will contain a list of the items that are stocked in
+the vending machine and your shopping cart that contains
+items you selected to buy. You will be able to cancel any
+action at any point in the customer interface.
+
+FILLING THE SHOPPING CART
+
+To add an item to your shopping cart, simply start by
+selecting the item from the list. Once selected, the item
+price will be displayed and you will be able to choose how
+many of this item you want to buy by clicking the left and
+right arrows. When you have made your selection, you can
+then click the "Add item" button to add the selected amount
+of that item to your shopping cart. You may then continue
+to add more items to your shopping cart. Should you decide
+to not buy an item after all, you can select it in the
+shopping cart and click the "Remove Item" button. If you are
+satisfied with your selections, you can click the "Checkout"
+button to move to the checkout screen.
+
+CHECKING OUT
+
+The checkout screen will contain your shopping cart with the
+items you selected. You will also see the total cost of your
+selection, as well as the money you have already inserted
+into the vending machine. Press the "Add money" button to
+go a new screen where you can input the amount of money
+you want to insert. Once you have added money to pay for
+your items, you may press the "Buy" button. If you added
+enough money, the machine will dispense your items and
+return any change.
+ 
+
+**************************************************************
+
+RESTOCKER GUI
+
+The restocker GUI is from the perspective of the restocker. A
+restocker can do things such as download and upload vending
+machine information and manage items. When entering the GUI,
+you are prompted with the following choices:
+
+---------------
+Read Restocker Note
+Read Marketing Note
+Edit Stock
+List Stock
+---------------
+
+The different modes can be used as follows:
+
+---------------
+Read Restocker Note
+---------------
+
+Using this option allows you to see the current restocker note
+set by the last restocker on that particular machine. You will
+be able to edit the note in this screen. To edit the note, just 
+type in any notes you wish to save, then click the save button.
+Clicking on back will revert any changes you have made if you 
+have not clicked on the save button.
+
+---------------
+Read Marketing Note
+---------------
+
+Using this option allows you to see the current marketing note
+set by the last marketing on that particular machine. These
+will hold instructions on which items to add to or remove
+from the machine.
+
+---------------
+Edit Stock
+---------------
+
+Upon choosing the edit stock option, you are given the 
+following information:
+
+- A list of the current stock in the machine
+- Options to add or remove items
+- The marketing notes (displayed at the top of the screen)
+
+ADDING NEW ITEMS
+
+To add a new item to the machine, input the necessary
+information and then press "Add". Information that has
+to be provided contains:
+
+- Item Name: The name of the item
+- Amount: The amount of the item you will be adding
+- Row: The row to place the item in
+- Column: The column to place the item in
+- Price: The price of the item
+- Expiration Date: The date the item will expire
+
+If the item information is correct and does not conflict
+with already existing stock, the item will be added to
+the vending machine. If any errors were made, you will
+be prompted with a helpful message dialogue informing
+you of the mistake made.
+
+RESTOCKING ITEMS
+
+To restock an item, select the item in the stock list,
+specify a new expiration date and click "Restock".
+The location of that item will then be completely refilled
+with the selected item, where the added items will have
+a new expiration date.
+
+REMOVING ITEMS
+
+There are two options when removing items.
+
+"Remove Selected Item" will remove the item that you
+selected in the stock list from the vending machine.
+If there are more than one items at that location,
+all of them will be removed and the location cleared.
+
+"Remove Expired Items" will automatically check every
+item and remove all expired ones from the machine.
+
+---------------
+List Stock
+---------------
+
+This will present you with a list of the current stock in
+the vending machine that will contain information about
+the stocked items.
+
+**************************************************************
+
+MARKETING GUI
+
+The marketing GUI is used for all marketing perspective actions
+such as downloading and uploading notes, checking on current
+stock in each machine, and viewing statistics for any number
+of machines individually or as a whole.
+
+---------------
+Marketing Interface Main
+---------------
+
+The marketing interface is resizable, unlike the 
+graphical user interfaces for the customer and restocker. This
+is to allow for more desktop user friendly software.
+
+The different parts of the interface are as follows:
+
+- Vending Machine Selection
+
+- Option Tabs [which include...]
+    - List Stock
+    - Restocker [Note]
+    - Marketing [Note]
+    - Item %
+    - Item Gross
+    - % Reasons Item Sold
+    - Income Graph
+    
+- Main Viewing Window
+
+Any of the tabs which are selected will display in the main
+viewing window for viewing and/or managing the machines.
+
+
+VENDING MACHINE SELECTION
+
+The vending machine selection can be done on the left hand
+side of your interface. To select a single vending machine, 
+you only need to click one of the machines listed, then click
+on the update button below. To access multiple machines is 
+just as easy, you only need to select the machines you want
+and then proceed to click update. 
+
+You can deselect all or select all items with the user 
+friendly buttons below, but you must still click update to 
+refresh the machine views for statistics or machine 
+management.
+
+Please note that the IDs shown in the box below the list of
+vending machines is not the updated view you are looking at.
+It is only the machines you currently have selected in the
+list itself. Yet again, a simple click on update will fix
+this.
+
+OPTION TABS
+
+---------------
+LIST STOCK
+---------------
+
+The list stock tab is very similar to the interface which a
+restocker has access to on their respective GUI. All machines
+selected will display their respective current stock, as well
+as the total amount of stock contained in the machine, and
+the total price that those stock are worth.
+
+---------------
+RESTOCKER
+---------------
+
+The restocker tab displays all notes for each vending machine
+selected which are from the restocker. Each of these notes
+contains a date and machine ID for readability.
+
+---------------
+MARKETING
+---------------
+
+The marketing tab is similar to that of the restocker tab.
+Upon clicking on the tab, you are greeted with an initial 
+screen which either allows you to enter a read only view, or
+an edit view. In the edit view, you are able to edit notes 
+by the masses if you wish to send out the same notes to 
+multiple vending machines.
+
+---------------
+ITEM %
+---------------
+
+The item % tab shows you the percents of items sold in the 
+form of a pie graph. This feature is useful with the 
+selection of multiple vending machines, as you can see the
+overall selling rate of specific items over a wide range of 
+locations.
+
+---------------
+ITEM GROSS
+---------------
+
+The item gross tab shows you the gross profits of all items
+sold in the selected vending machines.
+
+---------------
+% REASON ITEM SOLD
+---------------
+
+The % reason item sold tab allows you to pick an item from 
+the selected vending machines. After picking an item from the
+list, you are shown pie chart which displays the percentages
+of reasons why this certain item was removed from the machine.
+The three possibilities are as follows:
+
+- SOLD: the item was sold to a customer
+
+- EXPIRED: the item was removed by a restocker due to 
+expiration
+
+- BY_REQUEST: the item was removed by a restocker by request
+from the marketing department
+
+---------------
+INCOME GRAPH
+---------------
+
+The income graph shows the total income over the total life 
+span of vending machines selected. You can see the gross
+profits on the Y-Axis vs. time on the X-Axis.
+
+**************************************************************
+
+---------------
+    Memory
+---------------
+
+Because this program could potentially be run and scripted to
+be run with a large amount of vending machines, there is no
+maximum amount of vending machines the code is limited to 
+creating on startup. If your computer does not designate or
+cannot handle a large amount of machines when you try to 
+allocate them, this program will initially break. Please use
+your own judgment when creating a system of SVM's.

@@ -1,0 +1,248 @@
+/*
+ * File: RestockerManager.java
+ * Manager which provides access for restocker users to interact with the Smart
+ * Vending Machine (SVM) database.
+ * 
+ * Version 1.0
+ * 
+ * Authors:
+ *   Michael Surdouski (mxs1649@rit.edu)
+ */
+
+package edu.rit.se.coolTeamB.restocker;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Observable;
+import java.util.Calendar;
+import java.util.Observer;
+
+import edu.rit.se.coolTeamB.core.Item;
+import edu.rit.se.coolTeamB.core.LocalVend;
+import edu.rit.se.coolTeamB.customer.CustomerGUI;
+import edu.rit.se.coolTeamB.exceptions.*;
+
+/******************************************************************************
+ * The <CODE>RestockerManager</CODE> Java class provides utility functions which
+ * are performed using the customer user interface - </CODE>RestockerUI<CODE>.
+ * 
+ * @version
+ *   1.00 22 Mar 2013
+ * @author
+ *   Michael Surdouski (mxs1649@rit.edu)
+ ******************************************************************************/
+public class RestockerManager extends Observable implements ActionListener
+{
+    private List<LocalVend> localVends;
+
+    public RestockerManager(List<LocalVend> localVends)
+    {
+	this.localVends = localVends;
+    }
+
+    /**
+	 * Verifies that the machine is unlocked, then locks it to begin the
+	 * services provided.
+	 * @param - none
+	 * <dt><b>Postcondition:</b><dd>
+	 *   localVendingMachine lock status is true
+	 * @return
+	 *   true if ready to begin transaction
+	 * @throws IllegalLockOperationException 
+	 */
+	public boolean verifyBegin(int ID) throws IllegalLockOperationException
+	{
+		if(!localVends.get(ID).getLock())
+		{
+			triggerLock(ID);
+			return true;
+		}
+		return false;
+	}
+	
+	public void unlock(int ID) throws IllegalLockOperationException
+	{
+	    localVends.get(ID).openLock();
+	}
+	
+	public boolean getLock(int ID)
+	{
+	    return localVends.get(ID).getLock();
+	}
+
+    /**
+     * Edits the restocker note on localVendingMachine.
+     * 
+     * <dt><b>Precondition:</b><dd>
+     *   the date is a legal date (non-negative)
+     * @param notes
+     *   the notes to add to vending machine
+     * @param date
+     *   date the note is being edited
+     * @throws NullDateException 
+     */
+    public void editRestockerNote(int ID, String notes, Calendar date) throws NullDateException
+    {
+    	localVends.get(ID).getRestockerNote().edit(notes, date);
+	localVends.get(ID).writeStockFile();
+
+    }
+
+    /**
+     * Stocks the machine for an existing item with a certain number of items.
+     * <dt><b>Precondition:</b><dd>
+     *   vending machine contains this type of item
+     * @param item
+     * @param howMany
+     *   the number of items to add to stock
+     * <dt><b>Postcondition:</b><dd>
+     *   localVendingMachine's stock has been updated
+     * @throws StockException 
+     */
+    public void restock(int ID, int row, int col, Calendar date) 
+	    	throws NegativeInputException,
+	    	NonExistingStockException, OutOfBoundsStockException, 
+	    	StockException, NullDateException
+    {
+	localVends.get(ID).restock(row, col, date);
+    }
+
+    /**
+     * Removes all items and item information of this type from the machine.
+     * <dt><b>Precondition:</b><dd>
+     *   machine contains this type of item
+     * @param item
+     * <dt><b>Postcondition:</b><dd>
+     *   localVendingMachine's stock has been updated
+     * @throws StockException 
+     * @throws OutOfBoundsStockException 
+     * @throws NegativeInputException 
+     */
+    public void removeAll(int ID, int row, int col) 
+	    	throws NonExistingStockException, OutOfBoundsStockException,
+	    	StockException, NegativeInputException
+    {
+	localVends.get(ID).removeAll(row, col);
+    }
+    
+    public void removeExpired(int ID) 
+	    throws OutOfBoundsStockException, NonExistingStockException, 
+	    StockException, NegativeInputException
+    {
+	localVends.get(ID).removeExpired();
+    }
+
+    /**
+     * Stocks the machine with a new item.
+     * <dt><b>Precondition:</b><dd>
+     *   vending machine contains no information about this item
+     * @param item
+     * @param howMany
+     *   the number of items to add to stock
+     * <dt><b>Postcondition:</b><dd>
+     *   localVendingMachine's stock has been updated
+     * @throws StockException 
+     */
+    public void addStock(int ID, String name, double price, Calendar date, 
+	    		int row, int col, int howMany) 
+	    		throws NegativeInputException, 
+	    		OutOfBoundsStockException,
+	    		StockException, NullDateException
+    {
+	localVends.get(ID).addItem(name, price, date, row, col, howMany);
+    }
+
+    /**
+     * Read the String interpretation of the RestockerNote contained in 
+     * localVendingMachine.
+     * 
+     * @return
+     *   the string representation of the RestockerNote
+     */
+    public String readRestockerNote(int ID)
+    {
+	return localVends.get(ID).getRestockerNote().read();
+    }
+
+    /**
+     * Read the String interpretation of the MarketingNote contained in 
+     * localVendingMachine.
+     * 
+     * @return
+     *   the string representation of the MarketingNote
+     */
+    public String readMarketingNote(int ID)
+    {
+	return localVends.get(ID).getMarketingNote().read();
+    }
+
+    public void register(Object UI, int ID)
+    {
+	localVends.get(ID).addObserver((Observer) UI);
+	localVends.get(ID).startNotify();
+    }
+    
+    
+    public void deregister(RestockerGUI UI, int ID)
+	{
+	    localVends.get(ID).deleteObserver(UI);
+	}
+    
+    public Calendar getRestockerDate(int ID){
+    	return localVends.get(ID).getRestockerNote().getDate();
+    }
+    
+    public Calendar getMarketingDate(int ID){
+    	return localVends.get(ID).getMarketingNote().getDate();
+    }
+
+    private void triggerLock(int ID) throws IllegalLockOperationException
+	{
+		localVends.get(ID).setLock();
+	}
+    
+    
+    @Override
+    public void actionPerformed(ActionEvent e) 
+    {
+	// TODO Fill this stuff out and change all methods to private after
+	//	you do so.
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

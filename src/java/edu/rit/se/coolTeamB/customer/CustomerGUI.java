@@ -1,0 +1,1478 @@
+package edu.rit.se.coolTeamB.customer;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableModel;
+
+import edu.rit.se.coolTeamB.core.LocalVend;
+import edu.rit.se.coolTeamB.core.XYPair;
+import edu.rit.se.coolTeamB.exceptions.NegativeInputException;
+import edu.rit.se.coolTeamB.exceptions.NonExistingStockException;
+import edu.rit.se.coolTeamB.exceptions.OutOfBoundsStockException;
+import edu.rit.se.coolTeamB.exceptions.StockException;
+import edu.rit.se.coolTeamB.miscellaneous.FancyButton;
+
+/******************************************************************************
+ * The <CODE>CustomerGUI</CODE> Java class provides a GUI for customer level
+ * access of the SVM system.
+ * 
+ * @version 1.00 14 April 2013
+ * @author Samuel Babalola (sob8666@rit.edu)
+ ******************************************************************************/
+
+public class CustomerGUI extends JFrame implements Observer
+{
+
+	private static final long serialVersionUID = 3082165472549773897L;
+
+	// private JFrame frame;
+	public int ID;
+	private CustomerManager manager;
+	private LocalVend thisVend;
+	private JTextField money;
+	private String numbers = "";
+	private JPanel mainPanel = new JPanel();
+	private JPanel helpInfoPanel = new JPanel();
+	private JPanel helpPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+	private DefaultTableModel tableModel;
+	private JTable itemsToBuy;
+	private Object[] column = { "Row", "Column", "Name", "Price", "Amount" };
+	private Object[] columnHeading = { "Row", "Column", "Item Name" };
+	private Object itemsToCheckout[][] = {};
+
+	private DefaultTableModel tableItemModel;
+	private Object[][] itemsArray;
+
+	private DecimalFormat df = new DecimalFormat("0.00");
+
+	/**
+	 * <CODE>CustomerGUI</CODE> Provides a Customer Graphical User Interface for
+	 * the SVM Machine
+	 * 
+	 * @param ID
+	 * @param manager
+	 */
+	public CustomerGUI(int ID, CustomerManager manager)
+	{
+
+		this.ID = ID;
+		this.manager = manager;
+		setUp(ID);
+		setTitle("Customer Vending Machine: " + (ID + 1));
+		// setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setSize(600, 500);
+		setResizable(false);
+		lockScreen();
+		add(mainPanel);
+		setVisible(true);
+
+	}
+
+	/**
+	 * Displays if the Machine is locked or not.
+	 * 
+	 * @param - none
+	 */
+	private void lockScreen()
+	{
+
+		mainPanel.setLayout(new BorderLayout());
+
+		JButton lock = new JButton("LOCKED (CLICK TO UNLOCK)");
+		lock.setPreferredSize(new Dimension(5, 5));
+		lock.setFont(new Font("Verdana", Font.BOLD, 32));
+
+		lock.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+
+				try
+				{
+					if (manager.verifyBegin(ID))
+					{
+						mainPanel.removeAll();
+						choiceScreen();
+					}
+				}
+				catch (Exception e1)
+				{
+
+					System.out
+							.println("something went wrong with bringing up choice screen");
+				}
+			}
+		});
+		mainPanel.add(lock, BorderLayout.CENTER);
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+
+	}
+
+	/**
+	 * Displays the Total Stock, a shopping cart, and other features that
+	 * enables the user to choose an item or items.
+	 * 
+	 * @param - none
+	 * @throws OutOfBoundsStockException
+	 */
+	private void choiceScreen() throws OutOfBoundsStockException
+	{
+		GridLayout mainPanelGrid = new GridLayout(1, 2);
+		mainPanel.setLayout(mainPanelGrid);
+		// mainPanel.setBackground(Color.RED);
+		mainPanelGrid.setHgap(20);
+		JPanel leftSide = new JPanel(new BorderLayout(0, 20));
+		leftSide.setAlignmentX(100);
+		JPanel rightSide = new JPanel(new BorderLayout(0, 20));
+
+		// Left Side List
+
+		JPanel leftSidePanelTop = new JPanel(new BorderLayout(0, 5));
+		leftSidePanelTop.setOpaque(false);
+		JLabel itemsLabel = new JLabel("Total Stock");
+		itemsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		itemsLabel.setFont(new Font("Tahoma", Font.BOLD, 30));
+		itemsArray = getStocks();
+
+		tableItemModel = new DefaultTableModel(itemsArray, columnHeading)
+		{
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isCellEditable(int row, int column)
+			{
+				// all cells false
+				return false;
+			}
+		};
+
+		final JTable items = new JTable(tableItemModel);
+
+		// tableItemModel.setDataVector(getStocks(), columnHeading);
+
+		items.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+		items.getTableHeader().setResizingAllowed(false);
+		items.getTableHeader().setReorderingAllowed(false);
+		items.getTableHeader().setRequestFocusEnabled(false);
+
+		items.setFont(new Font("Verdana", 20, 15));
+		items.setRowHeight(40);
+		items.getColumnModel().getColumn(0).setMaxWidth(30);
+		items.getColumnModel().getColumn(0).setMinWidth(30);
+		items.getColumnModel().getColumn(1).setMaxWidth(50);
+		items.getColumnModel().getColumn(1).setMinWidth(50);
+		items.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+
+		JScrollPane itemsScroll = new JScrollPane(items);
+
+		leftSidePanelTop.add(itemsLabel, BorderLayout.NORTH);
+		leftSidePanelTop.add(itemsScroll, BorderLayout.CENTER);
+
+		// price TextBox
+		JPanel leftSidePanelBottom = new JPanel(new GridLayout(2, 1));
+		JPanel leftSidePanelBottomFirst = new JPanel(new FlowLayout());
+		JPanel pricePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		JLabel priceLabel = new JLabel("Price: ");
+		priceLabel.setFont(new Font("Verdana", Font.BOLD, 20));
+		final JTextField priceText = new JTextField("$0.00");
+		priceText.setPreferredSize(new Dimension(200, 30));
+		priceText.setFont(new Font("Verdana", 20, 20));
+		priceText.setHorizontalAlignment(JTextField.RIGHT);
+
+		priceText.setEditable(false);
+		pricePanel.add(priceLabel);
+		pricePanel.add(priceText);
+		leftSidePanelTop.add(pricePanel, BorderLayout.SOUTH);
+		// previous button
+		// ImageIcon icon1 = createImageIcon("images/back.png", 100, 100);
+
+		final JButton prev = new FancyButton(this.getClass(),
+				"images/back.png", 100, 100);
+		// makeButtonIconOnly(prev);
+		prev.setPreferredSize(new Dimension(100, 70));
+		prev.setEnabled(false);
+		// numnber text
+		final JTextField numberText = new JTextField("1");
+		numberText.setPreferredSize(new Dimension(50, 30));
+		numberText.setEditable(false);
+		numberText.setHorizontalAlignment(JTextField.CENTER);
+		numberText.setFont(new Font("Verdana", 20, 20));
+		// next
+
+		final JButton next = new FancyButton(this.getClass(),
+				"images/forward.png", 100, 100);
+		;
+
+		next.setPreferredSize(new Dimension(100, 70));
+		next.setEnabled(false);
+
+		final JButton addItem = new FancyButton(this.getClass(),
+				"images/AddItemButton.png", 250, 50);
+		addItem.setPreferredSize(new Dimension(10, 70));
+
+		addItem.setEnabled(false);
+
+		leftSidePanelBottomFirst.add(prev);
+		leftSidePanelBottomFirst.add(numberText);
+		leftSidePanelBottomFirst.add(next);
+
+		leftSidePanelBottom.add(leftSidePanelBottomFirst);
+		leftSidePanelBottom.add(addItem);
+
+		leftSide.add(leftSidePanelTop, BorderLayout.CENTER);
+		leftSide.add(leftSidePanelBottom, BorderLayout.SOUTH);
+
+		// Right Side
+		// Top
+		JLabel itemsToBuyLabel = new JLabel("Shopping Cart");
+		itemsToBuyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		itemsToBuyLabel.setFont(new Font("Tahoma", Font.BOLD, 25));
+
+		JPanel rightSidePanelTop = new JPanel(new BorderLayout(0, 5));
+
+		// List
+
+		tableModel = new DefaultTableModel(itemsToCheckout, column)
+		{
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean isCellEditable(int row, int column)
+			{
+				// all cells false
+				return false;
+			}
+		};
+
+		itemsToBuy = new JTable(tableModel);
+		itemsToBuy.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		itemsToBuy.getTableHeader().setResizingAllowed(false);
+		itemsToBuy.getTableHeader().setReorderingAllowed(false);
+		itemsToBuy.getTableHeader().setRequestFocusEnabled(false);
+
+		itemsToBuy.setFont(new Font("Verdana", 20, 15));
+		itemsToBuy.setRowHeight(40);
+
+		tableModel.setDataVector(getShoppingCartList(), column);
+		itemsToBuy.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		itemsToBuy.getColumnModel().getColumn(0).setPreferredWidth(30);
+		itemsToBuy.getColumnModel().getColumn(1).setPreferredWidth(55);
+		itemsToBuy.getColumnModel().getColumn(2).setPreferredWidth(100);
+		itemsToBuy.getColumnModel().getColumn(3).setPreferredWidth(50);
+		itemsToBuy.getColumnModel().getColumn(4).setPreferredWidth(50);
+
+		// itemsToBuy.setFixedCellHeight(50);
+		JScrollPane itemsToBuyScroll = new JScrollPane(itemsToBuy);
+		rightSidePanelTop.add(itemsToBuyLabel, BorderLayout.NORTH);
+		rightSidePanelTop.add(itemsToBuyScroll, BorderLayout.CENTER);
+
+		// Bottom
+		// Checkout
+
+		final JButton checkoutButton = new FancyButton(this.getClass(),
+				"images/Checkout.png", 250, 50);
+
+		checkoutButton.setPreferredSize(new Dimension(100, 50));
+		checkoutButton.setFont(new Font("Verdana", 20, 20));
+		if (itemsToBuy.getRowCount() == 0)
+		{
+			checkoutButton.setEnabled(false);
+		}
+		else
+		{
+			checkoutButton.setEnabled(true);
+		}
+		// Cancel
+		JButton cancelButton = new FancyButton(this.getClass(),
+				"images/Cancel.png", 250, 50);
+		cancelButton.setPreferredSize(new Dimension(100, 50));
+
+		cancelButton.setFont(new Font("Verdana", 20, 20));
+
+		final JButton removeButton = new FancyButton(this.getClass(),
+				"images/RemoveItem.png", 250, 50);
+
+		removeButton.setPreferredSize(new Dimension(100, 50));
+		removeButton.setFont(new Font("Verdana", 20, 20));
+		removeButton.setEnabled(false);
+
+		GridLayout rightBottomGrid = new GridLayout(3, 1);
+		rightBottomGrid.setVgap(10);
+		JPanel rightSidePanelBottom = new JPanel(rightBottomGrid);
+		rightSidePanelBottom.add(removeButton);
+		rightSidePanelBottom.add(checkoutButton);
+		rightSidePanelBottom.add(cancelButton);
+
+		// Right Side Component adding
+		rightSide.add(rightSidePanelTop, BorderLayout.CENTER);
+		rightSide.add(rightSidePanelBottom, BorderLayout.SOUTH);
+
+		mainPanel.add(leftSide);
+		mainPanel.add(rightSide);
+
+		// All Listeners
+		prev.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+
+				int num = Integer.parseInt(numberText.getText());
+				num--;
+				numberText.setText("" + num);
+
+			}
+		});
+
+		next.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+
+				Integer num = Integer.parseInt(numberText.getText());
+				num++;
+
+				numberText.setText(num.toString());
+
+			}
+		});
+		// Text listener
+
+		numberText.addCaretListener(new CaretListener()
+		{
+
+			@Override
+			public void caretUpdate(CaretEvent arg0)
+			{
+
+				try
+				{
+					int row = (int) items.getValueAt(items.getSelectedRow(), 0);
+					int col = (int) items.getValueAt(items.getSelectedRow(), 1);
+					int amount = getAmount(row, col);
+
+					if (items.getSelectedRow() != -1 && amount >= 1)
+					{
+
+						addItem.setEnabled(true);
+						int num = Integer.parseInt(numberText.getText());
+
+						if (num <= 1 && amount != 1)
+						{
+							prev.setEnabled(false);
+							next.setEnabled(true);
+						}
+
+						else if (num >= amount && amount != 1)
+						{
+							prev.setEnabled(true);
+							next.setEnabled(false);
+						}
+
+						else if ((num <= 1 && amount == 1)
+								|| (num >= amount && amount == 1))
+						{
+							prev.setEnabled(false);
+							next.setEnabled(false);
+						}
+						else
+						{
+							prev.setEnabled(true);
+							next.setEnabled(true);
+						}
+					}
+					else
+					{
+
+						prev.setEnabled(false);
+						next.setEnabled(false);
+						addItem.setEnabled(false);
+					}
+				}
+				catch (Exception ex)
+				{
+
+				}
+			}
+		});
+
+		ListSelectionModel select = items.getSelectionModel();
+
+		select.addListSelectionListener(new ListSelectionListener()
+		{
+
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+			{
+
+				try
+				{
+
+					if (items.getSelectedRow() != -1)
+					{
+						addItem.setEnabled(true);
+						int row = (int) items.getValueAt(
+								items.getSelectedRow(), 0);
+						int col = (int) items.getValueAt(
+								items.getSelectedRow(), 1);
+						int amount = getAmount(row, col);
+						if (amount == 0)
+						{
+							numberText.setText("0");
+						}
+						else
+						{
+							numberText.setText("1");
+						}
+						priceText.setText("$" + getPrice(row, col));
+					}
+					else
+					{
+						addItem.setEnabled(false);
+						prev.setEnabled(false);
+						next.setEnabled(false);
+					}
+				}
+				catch (Exception ex)
+				{
+					String infoMessage = "Error generating prices.";
+					JOptionPane.showMessageDialog(null, infoMessage, "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+
+		ListSelectionModel select1 = itemsToBuy.getSelectionModel();
+		select1.addListSelectionListener(new ListSelectionListener()
+		{
+
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+			{
+
+				if (itemsToBuy.getSelectedRow() == -1)
+				{
+					removeButton.setEnabled(false);
+				}
+				else
+				{
+					removeButton.setEnabled(true);
+				}
+			}
+		});
+
+		addItem.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+				if (items.getSelectedRow() != -1)
+				{
+					String name = items.getValueAt(items.getSelectedRow(), 2)
+							.toString().trim();
+					int nrow = (int) items.getValueAt(items.getSelectedRow(), 0);
+					int ncol = (int) items.getValueAt(items.getSelectedRow(), 1);
+
+					int num = Integer.parseInt(numberText.getText().trim());
+					try
+					{
+						boolean exist = false;
+						if (num > 0)
+						{
+							for (int i = 0; i < itemsToBuy.getRowCount(); ++i)
+							{
+								String s = itemsToBuy.getValueAt(i, 2)
+										.toString().trim();
+								int row = (int) itemsToBuy.getValueAt(i, 0);
+								int col = (int) itemsToBuy.getValueAt(i, 1);
+
+								if (s.equals(name) && row == nrow
+										&& col == ncol)
+								{
+
+									int newNum = Integer.parseInt(itemsToBuy
+											.getValueAt(i, 4).toString()) + num;
+									itemsToBuy.setValueAt(newNum, i, 4);
+
+									exist = true;
+								}
+
+							}
+							if (!exist)
+							{
+								// Object data[] = { nrow, ncol, name, price,
+								// num };
+								// tableModel.addRow(data);
+							}
+						}
+
+						addToShoppingCart((int) items.getValueAt(
+								items.getSelectedRow(), 0) - 1, (int) items
+								.getValueAt(items.getSelectedRow(), 1) - 1, num);
+						tableModel.setDataVector(getShoppingCartList(), column);
+						itemsToBuy.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+						itemsToBuy.getColumnModel().getColumn(0)
+								.setPreferredWidth(30);
+						itemsToBuy.getColumnModel().getColumn(1)
+								.setPreferredWidth(55);
+						itemsToBuy.getColumnModel().getColumn(2)
+								.setPreferredWidth(100);
+						itemsToBuy.getColumnModel().getColumn(3)
+								.setPreferredWidth(50);
+						itemsToBuy.getColumnModel().getColumn(4)
+								.setPreferredWidth(50);
+						checkoutButton.setEnabled(true);
+						if (items.getSelectedRow() == -1)
+						{
+							addItem.setEnabled(false);
+						}
+
+						// TableRowSorter<TableModel> sorter = new
+						// TableRowSorter<TableModel>(
+						// itemsToBuy.getModel());
+						// itemsToBuy.setRowSorter(sorter);
+						// ArrayList<RowSorter.SortKy> sortKeys = new
+						// ArrayList<RowSorter.SortKey>();
+						// sortKeys.add(new RowSorter.SortKey(0,
+						// SortOrder.ASCENDING));
+						// sortKeys.add(new RowSorter.SortKey(1,
+						// SortOrder.ASCENDING));
+						//
+						// sorter.setSortKeys(sortKeys);
+
+					}
+					catch (Exception ex)
+					{
+						System.out
+								.println("problem during adding to shopping cart.");
+					}
+				}
+				int amount;
+				try
+				{
+					int row = (int) items.getValueAt(items.getSelectedRow(), 0);
+					int col = (int) items.getValueAt(items.getSelectedRow(), 1);
+					amount = getAmount(row, col);
+					if (amount > 0)
+					{
+						numberText.setText("1");
+					}
+					else
+					{
+						numberText.setText("0");
+					}
+				}
+
+				catch (OutOfBoundsStockException e)
+				{
+
+					System.out.println("Error getting Amount in add Items");
+				}
+
+				try
+				{
+					tableItemModel.setDataVector(getStocks(), columnHeading);
+					items.getColumnModel().getColumn(0).setMaxWidth(30);
+					items.getColumnModel().getColumn(0).setMinWidth(30);
+					items.getColumnModel().getColumn(1).setMaxWidth(50);
+					items.getColumnModel().getColumn(1).setMinWidth(50);
+				}
+				catch (OutOfBoundsStockException e)
+				{
+
+					System.out
+							.println("Problem getting Stock after adding to Cart");
+				}
+
+			}
+		});
+
+		removeButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+				try
+				{
+					// System.out.println("inside removeButton");
+					// manager.removeFromCart(ID,
+					// (int) itemsToBuy.getValueAt(itemsToBuy.getSelectedRow(),
+					// 0) -1,
+					// (int)
+					// itemsToBuy.getValueAt(itemsToBuy.getSelectedRow(), 1)
+					// -1);
+					System.out.println("Selected row "
+							+ itemsToBuy.getSelectedRow());
+					System.out.println("Number: " + itemsToBuy.getRowCount());
+					int row = (int) itemsToBuy.getValueAt(
+							itemsToBuy.getSelectedRow(), 0) - 1;
+					int col = (int) itemsToBuy.getValueAt(
+							itemsToBuy.getSelectedRow(), 1) - 1;
+					System.out.println(row + "  " + col);
+					removeFromShoppingCart(row, col);
+
+					tableModel.setDataVector(getShoppingCartList(), column);
+					itemsToBuy.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+					itemsToBuy.getColumnModel().getColumn(0)
+							.setPreferredWidth(30);
+					itemsToBuy.getColumnModel().getColumn(1)
+							.setPreferredWidth(55);
+					itemsToBuy.getColumnModel().getColumn(2)
+							.setPreferredWidth(100);
+					itemsToBuy.getColumnModel().getColumn(3)
+							.setPreferredWidth(50);
+					itemsToBuy.getColumnModel().getColumn(4)
+							.setPreferredWidth(50);
+
+					if (itemsToBuy.getSelectedRow() == -1)
+					{
+						removeButton.setEnabled(false);
+					}
+
+					try
+					{
+						tableItemModel
+								.setDataVector(getStocks(), columnHeading);
+						items.getColumnModel().getColumn(0).setMaxWidth(30);
+						items.getColumnModel().getColumn(0).setMinWidth(30);
+						items.getColumnModel().getColumn(1).setMaxWidth(50);
+						items.getColumnModel().getColumn(1).setMinWidth(50);
+					}
+					catch (OutOfBoundsStockException e)
+					{
+
+						System.out
+								.println("Problem getting Stock after adding to Cart");
+					}
+					if (itemsToBuy.getRowCount() == 0)
+					{
+						checkoutButton.setEnabled(false);
+					}
+				}
+				catch (Exception ex)
+				{
+					ex.printStackTrace();
+					String infoMessage = "Problem removing item.";
+					JOptionPane.showMessageDialog(null, infoMessage, "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+
+		});
+
+		checkoutButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+
+				itemsToCheckout = getTableData(itemsToBuy);
+				if (itemsToBuy.getRowCount() > 0)
+				{
+					mainPanel.removeAll();
+					checkOutScreen();
+				}
+				else
+				{
+					String infoMessage = "The Checkout List is empty";
+					// String location = "Infor";
+					JOptionPane.showMessageDialog(null, infoMessage, "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+
+			}
+		});
+
+		cancelButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+
+				try
+				{
+					manager.cancel(ID);
+					manager.unlock(ID);
+				}
+				catch (Exception e1)
+				{
+
+					e1.printStackTrace();
+				}
+				itemsToCheckout = new Object[0][0];
+				mainPanel.removeAll();
+				lockScreen();
+			}
+		});
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+
+	}
+
+	/**
+	 * Displays information about what the customer is buying and also provides
+	 * ability to add money and purchase the items.
+	 * 
+	 * @param - none
+	 */
+	private void checkOutScreen()
+	{
+		GridLayout mainPanelGrid = new GridLayout(1, 2);
+		mainPanel.setLayout(mainPanelGrid);
+		mainPanelGrid.setHgap(20);
+
+		JPanel leftSide = new JPanel(new BorderLayout(0, 20));
+		// leftSide.setAlignmentX(100);
+		JPanel rightSide = new JPanel(new BorderLayout(0, 40));
+
+		// Left Side
+		JScrollPane itemsToBuyScroll = new JScrollPane(itemsToBuy);
+
+		JLabel itemsToBuyLabel = new JLabel("Shopping Cart");
+		itemsToBuyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		itemsToBuyLabel.setFont(new Font("Tahoma", Font.BOLD, 25));
+
+		JPanel leftSidePanelTop = new JPanel(new BorderLayout(0, 20));
+
+		leftSidePanelTop.add(itemsToBuyLabel, BorderLayout.NORTH);
+
+		leftSidePanelTop.add(itemsToBuyScroll, BorderLayout.CENTER);
+
+		leftSide.add(leftSidePanelTop, BorderLayout.CENTER);
+
+		// Bottom
+		// Buy
+		// JButton buyButton = new FancyButton(this.getClass(),
+		// "images/purchase.png", 250, 50);
+		JButton buyButton = new JButton("Buy");
+		buyButton.setPreferredSize(new Dimension(100, 50));
+		buyButton.setFont(new Font("Verdana", 20, 20));
+
+		buyButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+
+				String moneyEntered = df.format(getEnteredMoney());
+				String totalCost = df.format(getTotalCost());
+				double change = Double.parseDouble(moneyEntered)
+						- Double.parseDouble(totalCost);
+				if (change < 0)
+				{
+					String infoMessage = "Not Enough Money to Buy the Items";
+
+					JOptionPane.showMessageDialog(null, infoMessage, "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+				else
+				{
+					try
+					{
+						checkout();
+						String infoMessage = "Your transaction has been "
+								+ "successful\n Change: " + df.format(change);
+
+						JOptionPane.showMessageDialog(null, infoMessage,
+								"Successful", JOptionPane.PLAIN_MESSAGE);
+
+						Object temp[][] = {};
+						itemsToCheckout = temp;
+
+						mainPanel.removeAll();
+						choiceScreen();
+					}
+					catch (Exception ex)
+					{
+						ex.printStackTrace();
+						String infoMessage = "Checkout failed, clearing items.";
+						JOptionPane.showMessageDialog(null, infoMessage,
+								"Error", JOptionPane.ERROR_MESSAGE);
+						try
+						{
+							manager.cancel(ID);
+						}
+						catch (Exception ex1)
+						{
+							ex1.printStackTrace();
+							String infoMessageCancelFail = "Cancel failed, exiting program...";
+							JOptionPane.showMessageDialog(null,
+									infoMessageCancelFail, "Error",
+									JOptionPane.ERROR_MESSAGE);
+							// System.exit(1);
+						}
+					}
+
+				}
+			}
+		});
+		// Cancel
+		JButton cancelButton = new JButton("Cancel");
+		cancelButton.setPreferredSize(new Dimension(100, 50));
+		cancelButton.setFont(new Font("Verdana", 20, 20));
+
+		JPanel leftSidePanelBottom = new JPanel(new GridLayout(2, 1));
+		leftSidePanelBottom.add(buyButton);
+		leftSidePanelBottom.add(cancelButton);
+
+		// Left Side Component adding
+		leftSide.add(leftSidePanelTop, BorderLayout.CENTER);
+		leftSide.add(leftSidePanelBottom, BorderLayout.SOUTH);
+
+		// Right
+		JPanel rightSideTopPanel = new JPanel(new GridLayout(4, 1));
+		JLabel enterMoneyLabel = new JLabel("Entered Money");
+		final JTextField enterMoneyText = new JTextField("$"
+				+ df.format(getEnteredMoney()));
+		enterMoneyText.setEditable(false);
+		JLabel totalCostLabel = new JLabel("Total Cost");
+		JTextField totalCostText = new JTextField("$"
+				+ df.format(getTotalCost()));
+		totalCostText.setEditable(false);
+
+		rightSideTopPanel.add(enterMoneyLabel);
+		rightSideTopPanel.add(enterMoneyText);
+		rightSideTopPanel.add(totalCostLabel);
+		rightSideTopPanel.add(totalCostText);
+
+		rightSide.add(rightSideTopPanel, BorderLayout.CENTER);
+		JButton addMoney = new JButton("Add Money");
+		addMoney.setPreferredSize(new Dimension(100, 50));
+		addMoney.setFont(new Font("Verdana", 20, 20));
+		rightSide.add(addMoney, BorderLayout.SOUTH);
+
+		addMoney.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+
+				mainPanel.removeAll();
+				addMoneyScreen();
+			}
+		});
+
+		cancelButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+				mainPanel.removeAll();
+				try
+				{
+					choiceScreen();
+				}
+				catch (OutOfBoundsStockException e)
+				{
+					e.printStackTrace();
+					System.out.println("also terrible error handling");
+				}
+			}
+		});
+
+		mainPanel.add(leftSide);
+		mainPanel.add(rightSide);
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+	}
+
+	/**
+	 * Displays a number entering system for inputting money
+	 * 
+	 * @param - none
+	 */
+	private void addMoneyScreen()
+	{
+
+		mainPanel.setLayout(new BorderLayout());
+
+		JPanel northPanel = new JPanel(new GridLayout(2, 1));
+		JPanel buttonPanel = new JPanel(new BorderLayout(30, 0));
+		// northPanel.revalidate();
+		JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		JLabel titleLabel = new JLabel("Adding Money");
+		titleLabel.setFont(new Font("Verdana", Font.BOLD, 20));
+		money = new JTextField("$0.00");
+		money.setEditable(false);
+		money.setPreferredSize(new Dimension(50, 50));
+		money.setFont(new Font("Verdana", Font.BOLD, 20));
+		money.setHorizontalAlignment(JTextField.RIGHT);
+		titlePanel.add(titleLabel);
+
+		numberButtonMethod(buttonPanel);
+
+		northPanel.add(titlePanel);
+		northPanel.add(money);
+
+		mainPanel.add(buttonPanel, BorderLayout.CENTER);
+		mainPanel.add(northPanel, BorderLayout.NORTH);
+
+		mainPanel.revalidate();
+		mainPanel.repaint();
+
+	}
+
+	/**
+	 * Add buttons with numbers on to a panel
+	 * 
+	 * @param panel
+	 *            the panel for the numbers to be placed on.
+	 */
+	private void numberButtonMethod(JPanel panel)
+	{
+		// Left Side
+		JButton zeroButton = new JButton("0");
+		// FancyButton oneButton = new FancyButton(this.getClass(),
+		// "images/numbers/1.png", 100, 60, "1");
+		JButton oneButton = new JButton("1");
+		JButton twoButton = new JButton("2");
+		JButton threeButton = new JButton("3");
+		JButton fourButton = new JButton("4");
+		JButton fiveButton = new JButton("5");
+		JButton sixButton = new JButton("6");
+		JButton sevenButton = new JButton("7");
+		JButton eightButton = new JButton("8");
+		JButton nineButton = new JButton("9");
+		// JButton dotButton = new JButton(".");
+		JButton backButton = new JButton("<-");
+
+		// Right Side
+		JButton clearButton = new JButton("Clear");
+
+		JButton okButton = new JButton("OK");
+		JButton cancelButton = new JButton("Cancel");
+		JPanel tempPanel = new JPanel();
+		tempPanel.setLayout(new GridLayout(4, 3));
+
+		// Clear Button Listener
+		clearButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				numbers = "";
+				changeMoney();
+			}
+		});
+
+		backButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				if (numbers.length() >= 1)
+				{
+
+					numbers = numbers.substring(0, numbers.length() - 1);
+					changeMoney();
+				}
+			}
+		});
+
+		cancelButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				numbers = "";
+				mainPanel.removeAll();
+				checkOutScreen();
+
+			}
+		});
+
+		okButton.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent arg0)
+			{
+				double amount = convertStringToDecimalMoney(money.getText()
+						.trim());
+				try
+				{
+					manager.addMoney(ID, amount);
+				}
+				catch (NegativeInputException e)
+				{
+
+					System.out.println("Problem adding money");
+				}
+				numbers = "";
+				mainPanel.removeAll();
+				checkOutScreen();
+			}
+		});
+		// Number Button Action Listener
+		buttonListeners(oneButton);
+		buttonListeners(twoButton);
+		buttonListeners(threeButton);
+		buttonListeners(fourButton);
+		buttonListeners(fiveButton);
+		buttonListeners(sixButton);
+		buttonListeners(sevenButton);
+		buttonListeners(eightButton);
+		buttonListeners(nineButton);
+		buttonListeners(zeroButton);
+		// buttonListeners(dotButton);
+
+		tempPanel.add(oneButton);
+		tempPanel.add(twoButton);
+		tempPanel.add(threeButton);
+		tempPanel.add(fourButton);
+		tempPanel.add(fiveButton);
+		tempPanel.add(sixButton);
+		tempPanel.add(sevenButton);
+		tempPanel.add(eightButton);
+		tempPanel.add(nineButton);
+		tempPanel.add(new JPanel());
+		tempPanel.add(zeroButton);
+		tempPanel.add(backButton);
+
+		panel.add(tempPanel, BorderLayout.CENTER);
+
+		JPanel tempPanel2 = new JPanel();
+		tempPanel2.setLayout(new GridLayout(4, 1));
+
+		tempPanel2.add(okButton);
+		tempPanel2.add(clearButton);
+		tempPanel2.add(new JPanel());
+		tempPanel2.add(cancelButton);
+
+		panel.add(tempPanel2, BorderLayout.EAST);
+
+	}
+
+	/**
+	 * Creates a button listener for the number buttons
+	 * 
+	 * @param button
+	 *            the button with numbers that are being inputted as money
+	 */
+	private void buttonListeners(Object button)
+	{
+		if (button instanceof FancyButton)
+		{
+
+			final FancyButton temp = (FancyButton) button;
+			System.out.println("In here" + temp.getCustomText());
+			temp.addActionListener(new ActionListener()
+			{
+
+				@Override
+				public void actionPerformed(ActionEvent arg0)
+				{
+
+					numbers += temp.getCustomText();
+					changeMoney();
+
+				}
+			});
+			button = temp;
+		}
+		else
+		{
+			final JButton temp = (JButton) button;
+			temp.addActionListener(new ActionListener()
+			{
+
+				@Override
+				public void actionPerformed(ActionEvent arg0)
+				{
+					numbers += temp.getText();
+					changeMoney();
+
+				}
+			});
+			button = temp;
+
+		}
+	}
+
+	/**
+	 * Updates the Money text depending on the Button being pressed
+	 */
+	private void changeMoney()
+	{
+		if (numbers.length() == 1)
+		{
+			if (numbers.charAt(0) == '0')
+			{
+				numbers = "";
+			}
+			else
+			{
+				money.setText("$0.0" + numbers);
+			}
+		}
+		else if (numbers.length() == 2)
+		{
+			money.setText("$0." + numbers);
+		}
+		else if (numbers.length() > 2)
+		{
+			money.setText("$" + numbers.substring(0, numbers.length() - 2)
+					+ "." + numbers.substring(numbers.length() - 2));
+		}
+		else
+		{
+			money.setText("$0.00");
+		}
+
+	}
+
+	/**
+	 * Adds the Customer GUI as part of the Observer of the local vend
+	 * 
+	 * @param ID
+	 * 
+	 */
+	private void setUp(int ID)
+	{
+		manager.register(this, ID);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
+	 */
+	@Override
+	public void update(Observable arg, Object subject)
+	{
+		if (arg instanceof LocalVend)
+		{
+
+			thisVend = (LocalVend) subject;
+
+		}
+	}
+
+	/**
+	 * Convert data in a JTable into a 2D Object
+	 * 
+	 * @param table
+	 *            a JTable that needs to be converted to a 2D array
+	 * @return a 2D Array of the data in the JTable
+	 */
+	private Object[][] getTableData(JTable table)
+	{
+		DefaultTableModel dtm = (DefaultTableModel) table.getModel();
+		int nRow = dtm.getRowCount(), nCol = dtm.getColumnCount();
+		Object[][] tableData = new Object[nRow][nCol];
+		for (int i = 0; i < nRow; i++)
+			for (int j = 0; j < nCol; j++)
+				tableData[i][j] = dtm.getValueAt(i, j);
+		return tableData;
+	}
+
+	/**
+	 * Gets the List of stock from the current Vending machine.
+	 * 
+	 * @return a 2D array of the List of Stock. index 0:Row index 1: Column
+	 *         index 2: Name of the item
+	 * @throws OutOfBoundsStockException
+	 */
+
+	private Object[][] getStocks() throws OutOfBoundsStockException
+	{
+		int i = 0;
+		Object stock[][] = new Object[thisVend.getTotalStock().size()][3];
+		for (Map.Entry<XYPair, Integer> itemPair : thisVend.getTotalStock()
+				.entrySet())
+		{
+			if (itemPair.getValue() != 0)
+			{
+				stock[i][0] = itemPair.getKey().x + 1;
+				stock[i][1] = itemPair.getKey().y + 1;
+				stock[i][2] = thisVend.getAtXYZ(itemPair.getKey().x,
+						itemPair.getKey().y, 0).getName();
+				++i;
+			}
+
+		}
+		sort2DArray(stock);
+
+		return stock;
+
+	}
+
+	/**
+	 * Gets the List of stock in the Shopping cart of the current Vending
+	 * machine.
+	 * 
+	 * @return a 2D array of the List of Stock in the shopping cart. index 0:Row
+	 *         index 1: Column index 2: Name of the item index 3: Price of the
+	 *         item index 4: the amount of item in stock
+	 * @throws OutOfBoundsStockException
+	 */
+	private Object[][] getShoppingCartList() throws OutOfBoundsStockException
+	{
+		int i = 0;
+		Object stock[][] = new Object[thisVend.getShoppingCart().size()][5];
+		for (Map.Entry<XYPair, Integer> itemPair : thisVend.getShoppingCart()
+				.entrySet())
+		{
+			if (itemPair.getValue() != 0)
+			{
+				stock[i][0] = itemPair.getKey().x + 1;
+				stock[i][1] = itemPair.getKey().y + 1;
+				stock[i][2] = thisVend.getAtXYZ(itemPair.getKey().x,
+						itemPair.getKey().y, 0).getName();
+				stock[i][3] = thisVend.getAtXYZ(itemPair.getKey().x,
+						itemPair.getKey().y, 0).getPrice();
+				stock[i][4] = itemPair.getValue();
+				++i;
+			}
+
+		}
+
+		sort2DArray(stock);
+		return stock;
+
+	}
+
+	/**
+	 * Sorts a 2D array based on the first two column, meant for row col sorting
+	 * 
+	 * @param stock
+	 *            The 2D array to be sorted
+	 */
+	private void sort2DArray(Object[][] stock)
+	{
+		Arrays.sort(stock, new Comparator<Object[]>()
+		{
+
+			@Override
+			public int compare(Object[] first, Object[] second)
+			{
+				// TODO Auto-generated method stub
+				String fString0 = "" + first[0];
+				String fString1 = "" + first[1];
+				String sString0 = "" + second[0];
+				String sString1 = "" + second[1];
+				String comb1 = fString0 + fString1;
+				String comb2 = sString0 + sString1;
+				return comb1.compareTo(comb2);
+
+			}
+		});
+	}
+
+	/**
+	 * Gets the price of the item based on its row and col in the vending
+	 * machine
+	 * 
+	 * @param row
+	 * @param col
+	 * @return a formatted string representation of the price
+	 * @throws OutOfBoundsStockException
+	 */
+	private String getPrice(int row, int col) throws OutOfBoundsStockException
+	{
+		double price = 0.00;
+		row = row - 1;
+		col = col - 1;
+		for (Map.Entry<XYPair, Integer> itemPair : thisVend.getTotalStock()
+				.entrySet())
+		{
+			if (itemPair.getValue() != 0 && itemPair.getKey().x == row
+					&& itemPair.getKey().y == col)
+			{
+				price = thisVend.getAtXYZ(row, col, 0).getPrice();
+				return df.format(price);
+
+			}
+		}
+
+		return df.format(price);
+
+	}
+
+	/**
+	 * Changes a String of money with the dollar sign into a double.
+	 * 
+	 * @param money
+	 *            the amount to change to double, e.g. "$4.20"
+	 * @return
+	 */
+	private double convertStringToDecimalMoney(String money)
+	{
+
+		money = money.replace("$", "");
+		return Double.parseDouble(money);
+	}
+
+	/**
+	 * Gets the Total cost of the items in the shopping cart
+	 * 
+	 * @return
+	 */
+	private double getTotalCost()
+	{
+		return thisVend.getShoppingCartCost();
+
+	}
+
+	/**
+	 * Gets the amount that have being inputed into to Vending Machine
+	 * 
+	 * @return
+	 */
+	private double getEnteredMoney()
+	{
+		return thisVend.getRunningTotal();
+	}
+
+	/**
+	 * Gets the number of items at a particular location in the vending machine
+	 * based on its row and col.
+	 * 
+	 * @param row
+	 * @param col
+	 * @return number of items
+	 * @throws OutOfBoundsStockException
+	 */
+	private int getAmount(int row, int col) throws OutOfBoundsStockException
+	{
+		int amount = 0;
+		row = row - 1;
+		col = col - 1;
+
+		for (Map.Entry<XYPair, Integer> itemPair : thisVend.getTotalStock()
+				.entrySet())
+		{
+			if (itemPair.getValue() != 0 && itemPair.getKey().x == row
+					&& itemPair.getKey().y == col)
+			{
+				amount = itemPair.getValue();
+				return amount;
+			}
+		}
+
+		return amount;
+	}
+
+	/**
+	 * Add item from shopping cart.
+	 * 
+	 * @param row
+	 * @param col
+	 * @param numberToAdd
+	 *            <b>Postcondition:</b><dd>shopping cart has been updated
+	 * @throws NonExistingStockException
+	 * @throws OutOfBoundsStockException
+	 * @throws NegativeInputException
+	 * @throws StockException
+	 */
+
+	private void addToShoppingCart(int row, int col, int numberToAdd)
+			throws NonExistingStockException, OutOfBoundsStockException,
+			NegativeInputException, StockException
+	{
+		manager.addToShoppingCart(ID, row, col, numberToAdd);
+	}
+	
+	
+	/**
+	 * Remove item from shopping cart.
+	 * 
+	 * @param row
+	 * @param col
+	 * 
+	 *            <b>Postcondition:</b><dd>shopping cart has been updated
+	 * @throws NonExistingStockException
+	 * @throws OutOfBoundsStockException
+	 * @throws NegativeInputException
+	 * @throws StockException
+	 */
+	private void removeFromShoppingCart(int row, int col)
+			throws NonExistingStockException, OutOfBoundsStockException,
+			NegativeInputException, StockException
+	{
+		manager.removeFromCart(ID, row, col);
+	}
+
+	/**
+	 * Complete the transaction for items in shopping cart. <dt>
+	 * <dd><b>Preconditions:</b></dd>
+	 * <dd>
+	 * shopping cart isn't empty there are sufficient funds to purchase items on
+	 * shopping cart
+	 * 
+	 * @return the amount of change customer receives <dt><b>Postcondition:</b>
+	 *         <dd> shopping cart is empty running total for money is empty
+	 * @throws OutOfBoundsStockException
+	 * @throws StockException
+	 * @throws NonExistingStockException
+	 */
+
+	private void checkout() throws IllegalArgumentException,
+			OutOfBoundsStockException, NonExistingStockException,
+			StockException
+	{
+		manager.checkOut(ID);
+	}
+
+	/**
+	 * Removes the Customer GUI as an observer of the local Vending machines.
+	 */
+	public void deregister()
+	{
+		manager.deregister(this, ID);
+	}
+}

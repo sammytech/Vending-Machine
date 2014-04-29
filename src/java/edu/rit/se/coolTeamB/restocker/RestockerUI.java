@@ -1,0 +1,823 @@
+/*
+ * File: RestockerUI.java
+ * Restocker access user interface for the Smart Vending Machine (SVM) system.
+ * 
+ * Version 1.0
+ * 
+ * Authors:
+ *   Michael Surdouski (mxs1649@rit.edu)
+ */
+
+package edu.rit.se.coolTeamB.restocker;
+
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.InputMismatchException;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Scanner;
+
+import edu.rit.se.coolTeamB.core.Item;
+import edu.rit.se.coolTeamB.core.XYPair;
+import edu.rit.se.coolTeamB.core.LocalVend;
+import edu.rit.se.coolTeamB.exceptions.*;
+
+/******************************************************************************
+ * The <CODE>RestockerUI</CODE> Java class provides a UI for restocker level 
+ * access of the SVM system.
+ * 
+ * @version
+ *   1.00 22 Mar 2013
+ * @author
+ *   Michael Surdouski (mxs1649@rit.edu)
+ ******************************************************************************/
+public class RestockerUI implements Observer
+{
+    public int ID;
+    private RestockerManager manager;
+    private LocalVend thisVend;
+    private Scanner in = new Scanner(System.in);
+
+    public RestockerUI(int ID, RestockerManager manager)
+    {
+		this.ID = ID;
+		this.manager = manager;
+		setUp(ID);
+		try
+		{
+		    runCLI();
+		}
+		catch(Exception e)
+		{
+		    Scanner in = new Scanner(System.in);
+		    e.printStackTrace();
+		    System.out.println("Press enter to quit.");
+		    String waitString = new String(in.nextLine());
+		}
+		
+		// update the stock file when the restocker is finished		
+		thisVend.writeStockFile();
+    }
+
+    @Override
+    public void update(Observable subject, Object arg)
+    {
+    	if (arg instanceof LocalVend)
+    	{
+    		thisVend = (LocalVend)subject;
+    	}
+    }
+
+    private void setUp(int ID)
+    {
+	manager.register(this, ID);
+    }
+    
+    public void runCLI() throws NegativeInputException, 
+    		OutOfBoundsStockException, ExistingStockException, 
+    		NonExistingStockException, StockException, NullDateException
+    {
+	
+    /* #########################################################
+	 * This is made to run with brute force and is in no way
+	 * nice. We have to add a lot functionality before this
+	 * becomes nice.
+	 * #########################################################*/
+    
+    	boolean inUse = true;
+    	boolean validInput;
+    	int option;
+    	String input;
+    	final int NUM_CHOICES = 8; // number of choices the restocker has
+    	while(inUse)
+    	{
+    		option = 0;
+    		validInput = false;
+    		
+    		System.out.println("\n\nWelcome to the Restocker " +
+    				"Command Line Interface for the system SVM:");
+        	System.out.println("=======================================" +
+        			"=======================");    		
+    		while(!validInput)
+    		{
+        		System.out.println("1. Read Restocker Note");
+        		System.out.println("2. Change Restocker Note");
+        		System.out.println("3. Read Marketing Note");
+        		System.out.println("4. Restock Items");
+        		System.out.println("5. Add New Items");
+        		System.out.println("6. Remove Items");
+        		System.out.println("7. List Stock");
+        		System.out.println("8. Exit");
+        		System.out.print("Choose one of the options: ");
+             	
+        		input = in.nextLine();
+            	try
+            	{
+            		option = Integer.parseInt(input);
+                	if (option < 1 || option > NUM_CHOICES)
+                	{
+                		System.out.println("Invalid choice.");
+                	}
+                	else
+                	{
+                		validInput = true;
+                	}
+            	}
+        		catch (NumberFormatException e)
+        		{
+        			System.out.println("Please enter an integer.\n");
+        		}
+    		}
+
+    		switch(option)
+    		{
+    		case 1:
+    			readRestockerNote();
+    			break;
+    		case 2:
+    			changeRestockerNote();
+    			break;
+    		case 3:
+    			readMarketingNote();
+    			break;
+    		case 4:
+    		    	restockItems();
+    		    	break;
+    		case 5:
+    			addItems();
+    			break;
+    		case 6:
+    			removeItems();
+    			break;
+    		case 7:
+    			listStockRowCol();
+    			break;
+    		case 8:
+    			System.out.println("\n\nThanks for using the Restocker" + 
+    						" Command Line");
+    			inUse = false;
+    			break;
+    		default:
+    			System.err.println("\nInvalid Input, Try Again");
+    			System.out.println();
+    			break;
+    		
+    		}
+ 
+    	}
+    }
+
+    /**
+     * Displays the current restocker note in the terminal window.
+     */
+    private void readRestockerNote()
+    {
+    	System.out.println("\n+++++++++++++++");
+    	System.out.println("Restocker Note");
+    	System.out.println("+++++++++++++++\n");
+    	System.out.println(manager.readRestockerNote(ID));
+   }
+    
+    /**
+     * Start the dialog to change the current restocker notes.
+     * The restocker will enter a new note and a date.
+     * @throws NullDateException 
+     */
+    private void changeRestockerNote() throws NegativeInputException, NullDateException
+    {
+    	String input;
+    	String note;
+    	int date = -1;
+    	boolean validDate = false;
+    	
+    	System.out.println("\n+++++++++++++++");
+    	System.out.println("Change Restocker Note");
+    	System.out.println("+++++++++++++++\n");
+    	
+    	System.out.println("Current restocker note:");
+    	System.out.println(manager.readRestockerNote(ID));
+    	
+    	System.out.println("\nWrite new restocker note:");
+    	input = in.nextLine();
+    	note = input;
+    	
+    	while(!validDate)
+    	{
+        	System.out.println("Enter date:");
+        	input = in.nextLine();
+        
+        	try
+        	{
+        		date = Integer.parseInt(input);
+            	if (date < 1)
+            	{
+            		System.out.println("Invalid date.");
+            	}
+            	else
+            	{
+            
+            		validDate = true;
+            	}
+        	}
+    		catch (NumberFormatException e)
+    		{
+    			System.out.println("Please enter an integer.");
+    		}
+    	}
+    	manager.editRestockerNote(ID, note, Calendar.getInstance());
+    	
+    }
+
+    /**
+     * Displays the current marketing note in the terminal window.
+     */
+    private void readMarketingNote()
+    {
+    	System.out.println("\n+++++++++++++++");
+    	System.out.println("Marketing Note");
+    	System.out.println("+++++++++++++++\n");
+    	System.out.println(manager.readMarketingNote(ID));
+    }
+    
+    private void restockItems() throws NegativeInputException, 
+    		OutOfBoundsStockException, ExistingStockException, 
+    		NonExistingStockException, StockException
+    {
+	int numRows = thisVend.getNumRows();
+	int numCols = thisVend.getNumCols();
+	int row = 0;
+	int col = 0;
+	boolean validRow = false;
+	boolean validCol = false;
+	String input;
+	
+	System.out.println("\n+++++++++++++++");
+	System.out.println("Restocking Items");
+	System.out.println("Enter 0 at any point in the input to cancel" +
+			" restocking of items");
+	System.out.println("+++++++++++++++");
+	listStockRowCol();
+	System.out.println("\nPick which item you would like to restock.");
+	
+	// get row of item
+	while (!validRow)
+	{
+		System.out.print("Enter row: ");
+		input = in.nextLine();
+		try
+		{
+			row = Integer.parseInt(input);
+    		if (row==0)
+    		{
+    			System.out.println("Remove cancelled.");
+    			return;
+    		}
+        	if (row < 1 || row > numRows)
+        	{
+        		System.out.println("Invalid row");
+        		System.out.println("Row has to be between 1 and " 
+        					+ numRows);
+        	}
+        	else
+        	{
+        		validRow = true;
+        	}   		
+        }
+		catch (NumberFormatException e)
+		{
+			System.out.println("Please enter an integer.");
+		}
+	}
+	
+	// get column of item
+	while (!validCol)
+	{
+		System.out.print("Enter column: ");
+		input = in.nextLine();
+		try
+		{
+			col = Integer.parseInt(input);
+    		if (col==0)
+    		{
+    			System.out.println("Remove cancelled.");
+    			return;
+    		}
+        	if (col < 1 || col > numCols)
+        	{
+        		System.out.println("Invalid column");
+        		System.out.println("Column has to be between 1 and "
+        				+ numCols);
+        	}
+        	else
+        	{
+        		validCol = true;
+        	}
+		}
+		catch (NumberFormatException e)
+		{
+			System.out.println("Please enter an integer.");
+		}
+	}
+	    
+    --col;	/*  set index of column	*/
+    --row;	/*  set index of row	*/
+    
+    if (thisVend.getAtXY(row, col).size() == 0)
+    {
+		System.out.println("There is no item at that location.");
+		return;
+    }
+    if (thisVend.getAtXY(row, col).size() == thisVend.getDepth())
+    {
+		System.out.println("This item is already fully stocked.");
+		return;
+    }
+    else if (thisVend.getAtXY(row, col).size() != 0)
+    {
+	try
+	{
+		manager.restock(ID, row, col,
+		
+		/* calendar only here for now for testing purposes */
+		Calendar.getInstance());
+		listStockRowCol();
+		System.out.println("Item "
+				+ thisVend.getAtXYZ(row, col, 0).getName()
+				+" restocked at (" + (row+1) + ","
+				+ (col+1) + ").");
+		return;
+	}
+	catch(Exception e)
+	{
+	    System.out.println(e.getMessage() + " was thrown " +
+	    						"during restocking.");
+	}
+    }
+    System.out.println("Incorrect location given.");
+    }
+
+
+//    public void restockAllItems()
+//    {
+//	
+//    }
+   
+    /**
+     * Opens the dialog for the restocker to add items.
+     * Restocker inputs name, price, and amount of item and then selects
+     * a row and column to enter that item.
+     * @throws NegativeInputException 
+     * @throws ExistingStockException 
+     * @throws OutOfBoundsStockException 
+     * @throws StockException 
+     */
+    private void addItems() throws NegativeInputException, 
+    		OutOfBoundsStockException, ExistingStockException, StockException
+    {
+    	int numRows = thisVend.getNumRows();
+    	int numCols = thisVend.getNumCols();
+    	int depth = thisVend.getDepth();
+    	int row = -1;
+    	int col = -1;
+    	String input;
+    	String[] numberSplit;
+    	String itemName;
+    	int itemAmount = -1;
+    	double itemPrice = -1.00;
+    	boolean validRow = false;
+    	boolean validCol = false;
+    	boolean validPosition = false;
+    	boolean validAmount = false;
+    	boolean validPrice = false;
+    	Item tmpItem;
+    	
+    	System.out.println("\n+++++++++++++++");
+    	
+    	System.out.println("Adding Items");
+    	System.out.println("Enter 0 at any point in the input to cancel" +
+    			" addition of items");
+    	showVendingMachineDimensions();
+    	System.out.println("+++++++++++++++");
+    	
+    	// get item name
+    	System.out.print("Enter item name: ");
+    	itemName = in.nextLine();
+    	if(itemName.equals("0"))
+    	{
+    		System.out.println("Addition of Items Canceled");
+    		return;
+    	}
+    	
+    	// get item price
+    	while (!validPrice)
+    	{
+        	System.out.println("Item Price: ");
+    		input = in.nextLine();
+        	if(input.equals("0"))
+        	{
+        		System.out.println("Addition of Items Canceled");
+        		return;
+        	}
+    		try
+    		{
+    			itemPrice = Double.parseDouble(input);
+    			if (itemPrice < 0)
+            	{
+            		System.out.println("Invalid price");
+            	}
+            	else
+            	{
+        			// check that the number has at most two decimal places
+        			numberSplit = input.split("\\.");
+        			if (numberSplit.length > 1)
+        			{
+        				if (numberSplit[1].length() > 2)
+        				{
+        					System.out.println("Invalid price");
+        				}
+        				else
+        				{
+        					validPrice = true;
+        				}
+        			}
+        			else
+        			{
+        				validPrice = true;
+        			}
+            	} 
+
+            }
+    		catch (NumberFormatException e)
+    		{
+    			System.out.println("Please enter a valid number.");
+    		}
+    		
+    	}
+    	
+    	// get amount of item
+    	while (!validAmount)
+    	{
+    		System.out.print("Enter amount: ");
+    		input = in.nextLine();
+    		try
+    		{
+    			itemAmount = Integer.parseInt(input);
+        		if (itemAmount==0)
+        		{
+        			System.out.println("Addition of Items Canceled");
+        			return;
+        		}
+            	if (itemAmount < 1 || itemAmount > depth)
+            	{
+            		System.out.println("Invalid amount");
+            		System.out.println("Amount has to be between 1 and "
+            				+ depth);
+            	}
+            	else
+            	{
+            		validAmount = true;
+            	}
+    		}
+    		catch (NumberFormatException e)
+    		{
+    			System.out.println("Please enter an integer.");
+    		}
+    	}
+
+    	while (!validPosition)
+    	{
+    		validRow = false;
+    		validCol = false;
+    		
+        	// get row
+        	while (!validRow)
+        	{
+        		System.out.print("Enter row: ");
+        		input = in.nextLine();
+        		try
+        		{
+        			row = Integer.parseInt(input);
+            		if (row==0)
+            		{
+            			System.out.println("Addition of Items Canceled");
+            			return;
+            		}
+                	if (row < 1 || row > numRows)
+                	{
+                		System.out.println("Invalid row");
+                		System.out.println("Row has to be between 1 and " 
+                					+ numRows);
+                	}
+                	else
+                	{
+                		validRow = true;
+                	}
+                }
+        		catch (NumberFormatException e)
+        		{
+        			System.out.println("Please enter an integer.");
+        		}
+        	}
+        	
+        	// get column
+        	while (!validCol)
+        	{
+        		System.out.print("Enter column: ");
+        		input = in.nextLine();
+        		try
+        		{
+        			col = Integer.parseInt(input);
+            		if (col==0)
+            		{
+            			System.out.println("Addition of Items Canceled");
+            			return;
+            		}
+                	if (col < 1 || col > numCols)
+                	{
+                		System.out.println("Invalid column");
+                		System.out.println("Column has to be between 1 and "
+                				+ numCols);
+                	}
+                	else
+                	{
+                		validCol = true;
+                	}
+        		}
+        		catch (NumberFormatException e)
+        		{
+        			System.out.println("Please enter an integer.");
+        		}
+        	}
+	        if (thisVend.getAtXY(row-1, col-1).size() == 0)
+	        {
+	            validPosition = true;
+	        }
+	        else
+	        {
+	            System.out.println("There already is an item at location ("
+        			+ row + ", " + col + ").");
+	            System.out.println("Please select a different location.");
+	            validRow = false;
+	            validCol = false;
+	        }
+    	}
+    	
+    	System.out.println("You specified to add the following:");
+    	System.out.println("Item Name: " + itemName);
+    	System.out.println("Item Price: " + itemPrice);
+    	System.out.println("Number of Items: " + itemAmount);
+    	System.out.println("Location: (" + row + "," + col + ")");
+    	
+    	System.out.print("Are you sure you want to add the following " +
+    			"item to the vending machine(y/(n, other input)): ");
+    	String choice = in.next();
+    	
+    	
+    	try
+    	{
+    	if (choice.equals("y"))
+    	{
+    	    	/* test code with Calendar, should be removed eventually */
+    		tmpItem = new Item(itemName, itemPrice, Calendar.getInstance());
+        	manager.addStock(ID, itemName, itemPrice, Calendar.getInstance(),
+        				row-1, col-1, itemAmount);
+        	System.out.println("Items Added SuccessFully");
+    	}
+    	else
+    	{
+    		System.out.println("Items Not Added SuccessFully");
+    	}
+    	}
+    	catch(Exception e)
+    	{
+    	    System.out.println(e.getMessage() + " thrown inside of add items" +
+    	    					" add items method.");
+    	}
+    	
+    }
+    
+    /**
+     * Start dialog for restocker to remove items from the vending machine.
+     * Restocker selects items according to row and column.
+     * @throws NonExistingStockException 
+     * @throws StockException 
+     * @throws OutOfBoundsStockException 
+     */
+    private void removeItems() throws NonExistingStockException, OutOfBoundsStockException, StockException
+    {
+    	String input;
+    	int numRows = thisVend.getNumRows();
+    	int numCols = thisVend.getNumCols();
+    	int row = -1;
+    	int col = -1;
+    	boolean validRow = false;
+    	boolean validCol = false;
+    	
+    	
+    	System.out.println("Current stock:");
+    	listStockRowCol();
+    	System.out.println("\n+++++++++++++++");
+    	System.out.println("Removing Items");
+    	System.out.println("Specify location of Item");
+    	System.out.println("Enter 0 at any point in the input to cancel" +
+    			" addition of Items");
+    	showVendingMachineDimensions();
+    	System.out.println("+++++++++++++++");
+    	
+    	// get row of item
+    	while (!validRow)
+    	{
+    		System.out.print("Enter row: ");
+    		input = in.nextLine();
+    		try
+    		{
+    			row = Integer.parseInt(input);
+        		if (row==0)
+        		{
+        			System.out.println("Remove cancelled.");
+        			return;
+        		}
+            	if (row < 1 || row > numRows)
+            	{
+            		System.out.println("Invalid row");
+            		System.out.println("Row has to be between 1 and " 
+            					+ numRows);
+            	}
+            	else
+            	{
+            		validRow = true;
+            	}   		
+            }
+    		catch (NumberFormatException e)
+    		{
+    			System.out.println("Please enter an integer.");
+    		}
+    	}
+    	
+    	// get column of item
+    	while (!validCol)
+    	{
+    		System.out.print("Enter column: ");
+    		input = in.nextLine();
+    		try
+    		{
+    			col = Integer.parseInt(input);
+        		if (col==0)
+        		{
+        			System.out.println("Remove cancelled.");
+        			return;
+        		}
+            	if (col < 1 || col > numCols)
+            	{
+            		System.out.println("Invalid column");
+            		System.out.println("Column has to be between 1 and "
+            				+ numCols);
+            	}
+            	else
+            	{
+            		validCol = true;
+            	}
+    		}
+    		catch (NumberFormatException e)
+    		{
+    			System.out.println("Please enter an integer.");
+    		}
+    	}
+    	
+    	int tmpItemSize = thisVend.getAtXY(row-1, col-1).size();
+    	
+    	if (tmpItemSize == 0)
+    	{
+    		System.out.println("No item at location (" + row +
+    				", " + col + ").");
+    		return;
+    	}
+    	try
+    	{
+    	Item tmpItem = thisVend.getAtXYZ(row-1, col-1, 0);
+    	
+    	System.out.println("You selected the following item at position (" +
+    			row + ", " + col + "):");
+    	System.out.println(tmpItem.getName());
+    	System.out.format("Price: $%.2f, Stock: %d\n",
+    			tmpItem.getPrice(), tmpItemSize);
+    	System.out.println("Do you want to remove this item?" +
+    			" (y/(n, other input)");
+    	if (in.next().equals("y"))
+    	{
+    		System.out.println("Removed item " + tmpItem.getName()
+    				+ " from position (" + row + ", " + col + ").");
+        	manager.removeAll(ID, row-1, col-1);
+    	}
+    	else
+    	{
+    		System.out.println("No item was removed.");
+    	}
+    	}
+    	catch(Exception e)
+    	{
+    	    System.out.println(e.getMessage() + " was thrown while trying" +
+    	    					" to remove items.");
+    	}
+    }
+    
+    private void showVendingMachineDimensions()
+    {
+    	System.out.println("This vending machine has " + thisVend.getNumRows() 
+    			+ " rows and " + thisVend.getNumCols() + " columns.");
+    	System.out.println("Each position has " + thisVend.getDepth()
+    			+ " slots to keep items.");
+
+    }
+    
+    /**
+     * Print out the stock of the vending machine in a nice
+     * fashion in the terminal window according to their row and column
+     * in the machine.
+     */
+    private void listStockRowCol()
+    {
+	try
+	{
+    	int rows = thisVend.getNumRows();
+    	int cols = thisVend.getNumCols();
+    	    	
+		System.out.format("%4s | %4s | %-20s | %5s | %9s\n",
+				"Row", "Col", "Item", "Stock", "Price");  	
+    	for (int i = 0; i < rows; i++)
+    	{
+    		for (int j = 0; j < cols; j++)
+    		{
+    			int tmpItemSize = thisVend.getAtXY(i,j).size();
+    			if (tmpItemSize != 0)
+    			{
+    			    Item tmpItem = thisVend.getAtXYZ(i, j, 0);
+    				    System.out.format("%4d | %4d | %-20s | %5d | $%8.2f\n",
+            				i+1, j+1, tmpItem.getName(),
+            				tmpItemSize, tmpItem.getPrice());    				
+    			}
+    		}
+    	}
+	}
+	catch(Exception e)
+	{
+	    System.out.println(e.getMessage() + " was thrown while inside " +
+	    					"listStockRowCol method.");
+	}
+    }
+    
+    
+    /**
+     * Print out the stock of the vending machine in a nice
+     * fashion in the terminal window.
+     */
+    private void listStock()
+    {
+	try
+	{
+    	HashMap<XYPair, Integer> tmpStock;
+    	Integer itemCount;
+
+    	tmpStock = thisVend.getTotalStock();
+    	
+    	Iterator<Map.Entry<XYPair, Integer>> iter =
+    			tmpStock.entrySet().iterator();
+    	itemCount = 0;
+		System.out.format("%4s | %-20s | %5s | %9s\n",
+				"Nr", "Item", "Stock", "Price");
+    	while(iter.hasNext())
+    	{
+    		itemCount++;
+    		Map.Entry<XYPair, Integer> entry = iter.next();
+    		// This will look like for example:
+    		//   Nr | Item                 | Stock |     Price
+    		//    1 | Chips                |     4 | $   20.33
+    		System.out.format("%4d | %-20s | %5d | $%8.2f\n",
+    				itemCount, thisVend.getAtXYZ(entry.getKey().x, 
+    				entry.getKey().y, 0).getName(),
+    				entry.getValue(), 
+    				thisVend.getAtXYZ(entry.getKey().x, 
+    				entry.getKey().y, 0).getPrice());
+    	}
+	}
+    	catch(Exception e)
+    	{
+    	    System.out.println(e.getMessage() + " was thrown while inside " +
+    	    					"listStock method.");
+    	}
+    }
+    
+    /*
+     * This needs to be implemented on closing of the user interface, shouldn't
+     * need much code here, just make sure stuff is closed.
+     * Put all code before manager.deleteObserver(this) and DO NOT DELETE IT!!! 
+     */
+    //	private void onClose()
+    //	{
+    //		manager.deleteObserver(this);
+    //	}
+
+}

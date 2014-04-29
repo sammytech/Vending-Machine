@@ -1,0 +1,141 @@
+*******************************************************************************
+ERRORS AND THINGS TO FIX:   (todo [ ], fixed [x], not necessary to fix [n])
+*******************************************************************************
+
+-------------------------------
+Read This!
+-------------------------------
+If you start working on something, put your initial in the box, so no one
+else starts the same task.
+When you're done put in the x to show it's done and move it to the fixed tasks.
+
+-------------------------------
+high priority
+-------------------------------
+[x] MarketingGUI: does not need the ID selection when opening
+[x] MarketingGUI: should not implement the machine lock
+[ ] MarketingGUI: add button for global statistics
+[ ] MarketingGUI: in single statistics, have a list of all vending machines,
+	where you can select a machine and it then updated statistics for that
+	machine in the statistic tabs
+[ ] MarketingGUI: 
+[ ] Statistics: Get first draft of statistics charts working
+[ ] Main: Lock ensuring only one instance of the program can be overridden
+	by pressing enter in the command line. Program then opens another mainGUI
+	and you can log in to the same vending machine at the same time from the
+	different main GUIs.
+
+-------------------------------
+medium priority
+-------------------------------
+[x] when using an existing database the program should tell you how many
+    machines there with their dimensions
+[ ] CustomerGUI: add item amounts in the total stock list of the main window
+[x] RestockerGUI: columns in all stock lists should not be movable or resizable
+[x] RestockerGUI: You should be able to see the dimension of the machine,
+	so that the restocker knows what row, col, depth are
+[ ] RestockerGUI: all stock lists should be ordered by row-column
+[x] MainGUI: Input for ID field is not checked for correctness. You can input
+	negative numbers, 0, too large numbers, or letters. All these lead to
+	errors being thrown.
+[x] MainGUI: When entering machine ID, it should tell you what your choices
+	are, that is how many machines there are.
+[ ] MarketingGUI and RestockerGUI: when viewing the notes, there should be a
+	field on the top containing the machine ID and a field containing the date.
+	The note can be in the main text field as it is right now.
+[ ] CustomerGUI: You can click on the columns in the total stock list and
+	change the ordering of the items in the list.
+
+[ ] unit tests for build_run
+[ ] unit tests for core
+[ ] unit tests for customer
+[ ] unit tests for exceptions
+[ ] unit tests for marketing
+[ ] unit tests for mechanics
+[ ] unit tests for miscellaneous
+[ ] unit tests for restocker
+
+[x] java_docs for build_run	<== (everything done, except MainGUI)
+[x] java_docs for core		<== (everything done, except StatisticsReport)
+[ ] java_docs for customer
+[ ] java_docs for exceptions
+[ ] java_docs for marketing
+[x] java_docs for mechanics	<== (everything done, except AnalyticsEngine)
+[ ] java_docs for miscellaneous
+[x] java_docs for restocker
+
+-------------------------------
+low priority
+-------------------------------
+[ ] RestockerGUI: item price field currently allows numbers with more than
+	two decimal values after the dot.
+[x] RestockerNote: date should be changed to Calendar class and all functions
+	should be refactored to work correctly with Calendar.
+[ ] MarketingNote: date should be changed to Calendar class and all functions
+	should be refactored to work correctly with Calendar.
+[ ] All windows should not be resizable.
+
+-------------------------------
+fixed
+-------------------------------
+[x] CustomerGUI: clicking the remove button when nothing is selected results
+    in an error. the button could be greyed out, when no item is selected
+[x] CustomerGUI: when you select an item and click add, the item gets
+    deselected, but the add button does not grey out. Clicking the add button
+    without selecting a new item results in an error.
+[x] CustomerGUI: the checkout button could be greyed out, if there is no item
+    in the shopping cart. The error popup method works, but is annoying.
+[x] CustomerGUI: the item list on the second screen should have the same
+    appearance as on the first screen (add names for each column)
+[x] CustomerGUI: second screen should say shopping cart on top of the list
+[x] CustomerGUI: list on the second screen needs a scroll bar
+[x] CustomerGUI: you can click on the column names on the first screen and drag
+    the columns to a different position. This breaks the program, since it then
+    gets wrong information from the table.
+[x] CustomerGUI: Ordering in all lists should be according to row-col
+[x] CustomerGUI: when calculating the total cost in the second screen, the
+    amount gets displayed as $52.40, but because of precision the system has it
+    as $52.4000000000006. so, if you insert $52.40 exactly, it will tell you
+    that you have not enough money.
+[x] RestockerGUI: closing the GUI causes the program to end.
+[x] RestockerGUI: GUI should inform you if there is incorrect input when
+	trying to add items. It should not clear the fields in that case and tell
+	you what field is incorrect, so that the restocker can simply fix the
+	incorrect field and add the item. The next few points tie into this:
+[x] RestockerGUI: item amount field should only accept numbers from 1 to depth
+[x] RestockerGUI: item amount field should not accept letters or be empty
+[x] RestockerGUI: item row/col field should only accept numbers 1 to row/col
+[x] RestockerGUI: item price field should only allow numbers and be not empty
+[x] lock functionality has to be implemented for customer and restocker
+[x] customerGUI does not clear shopping cart when closing with the red x
+[x] CustomerGUI: add more info to the item info bar (or at least say 
+    price: $x.xx instead of just $x.xx)
+[x] CustomerGUI: items can be bought in the GUI but the system does not update
+    and the report file does not get written
+[x] CustomerGUI: when closing the GUI the stock file does not get updated
+[x] RestockerGUI: has to implement the machine lock feature to prevent
+	customers from using the same machine at the same time
+[x] RestockerGUI: Needs restock option (button) for selected item. When
+	restocking, only the expiration date has to be specified.
+[x] RestockerGUI: Adding an item to a place where another item already is,
+	should not be allowed
+[x] RestockerGUI: If there is an item at a position, you can add another item
+	with the same name but different price and exp date to the same position.
+[x] RestockerGUI: item name field can currently be empty when adding an item
+[x] RestockerGUI: date field should not be allowed to be empty.
+[x] If you open CustomerGUI and buy an item, and then open RestockerGUI
+	the program breaks.
+[x] CustomerGUI and other GUIs should have the machine ID in the title
+
+-------------------------------
+not needed to fix
+-------------------------------
+[n?] you should be able to quit out of making a new database
+[n] CustomerGUI: GUI has no close button
+[n] CustomerGUI: when closing the GUI the system does not go back to the
+    customer, resocker, marketing selection
+
+-------------------------------
+uncertain
+-------------------------------
+[?] lock for customer sometimes does not work
